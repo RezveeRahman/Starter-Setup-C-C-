@@ -18,15 +18,19 @@
             "editor.semanticHighlighting.enabled": true,
             "editor.stickyScroll.defaultModel": "foldingProviderModel",
             "editor.suggest.insertMode": "replace",
-            "editor.rulers": [72, 80]
         },
+
         "[c]": {
             "editor.wordBasedSuggestions": "off",
             "editor.semanticHighlighting.enabled": true,
             "editor.stickyScroll.defaultModel": "foldingProviderModel",
             "editor.suggest.insertMode": "replace",
-            "editor.rulers": [72, 80]
         },
+
+        "editor.renderWhitespace": "all",
+        "editor.tabSize": 8,
+        "editor.indentSize": "tabSize",
+        "editor.rulers": [90, 120],
         "editor.trimAutoWhitespace": true,
     }
 }
