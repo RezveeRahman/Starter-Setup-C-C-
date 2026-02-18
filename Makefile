@@ -17,20 +17,21 @@ SHELL=/bin/sh
 #
 
 CLANG=false
+
+# Compilers
+#
 CXX?=g++
-CXX_FLAGS?=-Wall -fanalyzer -std=${CXX_STD};
-CXX_STD=c++20;
+CXX_FLAGS?=-Wall -fanalyzer -std=${CXX_STD}
+CXX_STD=c++20
+
+CC=gcc
+CC_FLAGS?=-Wall -fanalyzer -std=${CC_STD}
+CC_STD=c17
 
 ifeq (${CLANG},true)
 	CXX=clang++-20;
 	CXX_FLAGS=-Wall -Xanalyzer -std=${CXX_STD}
 endif
-
-rez:
-	@echo "${CXX}";
-	@echo "${CXX_STD}";
-	@echo "${CXX_FLAGS}";
-.PHONY: rez
 
 
 # Directories
@@ -44,13 +45,19 @@ ASM_DIR:=${BUILD_DIR}/.asm
 
 # Source files
 #
-SRCS= main.cpp
+SRCS= main.c
 INC=main.h
 BIN=main
-ASMS:=$(patsubst %.cpp,%.s,${SRCS})
-OBJS:=$(patsubst %.cpp,%.o,${SRCS})
 
-VPATH=${SRC_DIR}:${INC_DIR}
+
+ASMS=$(patsubst %.cpp,%.s,${SRCS})
+ASMS=$(patsubst %.c,%.s,${SRCS})
+
+OBJS=$(patsubst %.cpp,%.o,${SRCS})
+OBJS=$(patsubst %.c,%.o,${SRCS})
+
+VPATH=${SRC_DIR}
+
 .DEFAULT_GOAL : help
 
 # Note that using `echo -e` is not POSIX compliant
@@ -71,46 +78,39 @@ run : build
 	@${BUILD_DIR}/${BIN}
 .PHONY: run
 
-build: ${OBJS}
-	@echo "Starting to build (Objects)"
-	@if [ ! -d ${OBJ_DIR} ]; then \
-		echo "Creating build directory."; \
-		mkdir ${OBJ_DIR}; \
-	fi;
-	@mv *.o ${OBJ_DIR}
-	@if [ ! -d ${DEBUG_DIR} ]; then \
-		echo "Creating a debug directory." \
-		mkdir ${DEBUG_DIR}; \
-	fi;
-	@pushd ${OBJ_DIR}; \
-	$(CXX) $(CXX_FLAGS) ${OBJS} -o ${BIN}; popd; \
-	if [ -f ${OBJ_DIR}/${BIN} ]; then \
-		mv ${OBJ_DIR}/${BIN} ${BUILD_DIR}/${BIN}; \
-	fi;
-	@echo "\x1b[38;5;2mSuccess!\x1b[0m\n\n"
+exe: build
+	@cd ${OBJ_DIR}; \
+	$(CC) $(CC_FLAGS) -o ${BIN} ${OBJS}; \
+	mv ${BIN} ../
+.PHONY: exe
+
+build: ${OBJS} ${ASMS} build_directory
+	@mv ${OBJS} ${OBJ_DIR}/
+	@mv ${ASMS} ${ASM_DIR}/
+	@echo -e "\x1b[38;5;2mSuccess!\x1b[0m\n"
 .PHONY: build
 
-assemble: ${ASMS}
-	@echo "Starting to build (Assembly *.s )"
-	@if [ ! -d ${ASM_DIR} ]; then \
-		echo "Creating build directory."; \
-		mkdir ${ASM_DIR}; \
-	fi;
-	@mv *.s ${ASM_DIR}
-	@echo -e "Assembled files"
-.PHONY: assemble
-
 clean:
-	@echo "\x1b[38;5;3mCleaning artifacts\x1b[0m\n"
+	@echo -e "\x1b[38;5;3mCleaning artifacts\x1b[0m"
 	@rm -rf ${DEBUG_DIR}
 	@rm -rf ${OBJ_DIR}
 	@rm -rf ${ASM_DIR}
 	@rm -rf ${BUILD_DIR}/${BIN}
-	@echo "\n"
 .PHONY: clean
+
+build_directory:
+	@mkdir -p ${BUILD_DIR};
+	@mkdir -p {${OBJ_DIR},${ASM_DIR}}
+.PHONY: build_directory
+
+%.o : %.c
+	$(CC) $(CC_FLAGS) -c $< -o $@ -I${INC_DIR}
 
 %.o : %.cpp
 	$(CXX) $(CXX_FLAGS) -c $< -o $@ -I${INC_DIR}
+
+%.s : %.c
+	$(CC) $(CC_FLAGS) -S $< -o $@ -I${INC_DIR}
 
 %.s : %.cpp
 	$(CXX) $(CXX_FLAGS) -S $< -o $@ -I${INC_DIR}
